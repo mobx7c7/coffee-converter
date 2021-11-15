@@ -4,7 +4,11 @@
   "description": "A media converter tool",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "yarn build && node dist/server.js",
+    "start:dev": "nodemon src/server.ts",
+    "build:withSucrase": "sucrase ./src -d ./dist --transforms typescript,imports",
+    "build": "tsc --build",
+    "clean": "tsc --build --clean"
   },
   "repository": {
     "type": "git",
