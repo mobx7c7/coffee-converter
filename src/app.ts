@@ -4,6 +4,9 @@ import express from 'express'
 import 'express-async-errors'
 import log from './log'
 import config from 'config'
+import path from 'path'
+import createApiRouter from './routes/api'
+import createWebRouter from './routes/web'
 
 class App {
     public express: express.Application
@@ -41,7 +44,12 @@ class App {
 
     private database(): void { }
 
-    private routes(): void { }
+    private routes(): void {
+        createApiRouter(this.express)
+        createWebRouter(this.express, {
+            rundir: path.join(__dirname, '..')
+        })
+    }
 }
 
 export default new App().express
