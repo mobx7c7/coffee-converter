@@ -1,0 +1,17 @@
+{
+    "compilerOptions": {
+        "noEmitOnError": true,
+        "noImplicitAny": false,
+        "outDir": "dist",
+        "sourceMap": true,
+        "target": "es5",
+        "lib": ["es6"],
+        "esModuleInterop": true,
+        "declaration": true,
+        //"removeComments": true,
+        //"allowJs": true,  
+    },
+    "include": [
+        "src/**/*"
+    ]
+}
