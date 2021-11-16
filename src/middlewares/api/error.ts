@@ -2,6 +2,7 @@ import { ErrorRequestHandler } from 'express'
 import { StatusCodes } from 'http-status-codes'
 import { MongoServerError } from 'mongodb'
 import { formidable } from 'formidable'
+import { HTTPError } from '../../common/exceptions';
 import mongoose from 'mongoose'
 
 export const CatchDuplicateKey: ErrorRequestHandler = (err, req, res, next) => {
