@@ -14,7 +14,11 @@ function createApis() {
             router.use('/jobs', (() => {
                 let router = Router()
                 router.route('/')
+                    .get(JobController.index)
                     .put(JobController.store)
+                    .all(ApiErrorResponse.MethodNotAllowed);
+                router.route('/:id')
+                    .get(JobController.show)
                     .all(ApiErrorResponse.MethodNotAllowed);
                 return router;
             })())
