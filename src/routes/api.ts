@@ -1,5 +1,6 @@
 import { Application, Router } from 'express'
 import * as ApiErrorResponse from '../middlewares/api/responses'
+import JobController from '../controllers/job'
 
 function createApis() {
     return {
@@ -7,7 +8,14 @@ function createApis() {
             let router = Router()
             router.route('/test')
                 .get((_, res) => res.send({ response: 'This is an api endpoint test' }))
-            return router
+            router.use('/jobs', (() => {
+                let router = Router()
+                router.route('/')
+                    .put(JobController.store)
+                    .all(ApiErrorResponse.MethodNotAllowed);
+                return router;
+            })())
+            return router;
         })()
     }
 }
