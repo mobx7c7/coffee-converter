@@ -12,8 +12,12 @@ class JobService {
     async createBatch({
         files = {},
         params = '',
-        userId = '',
-    }): Promise<any> {
+        userId = ''
+    }: {
+        files?: any,
+        params?: string,
+        userId?: string
+    } = {}): Promise<any> {
         let newBatchId = new mongoose.Types.ObjectId();
 
         let jobs = await Job.insertMany(
