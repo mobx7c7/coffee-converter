@@ -33,6 +33,9 @@ class App {
     }
 
     private configs(): void {
+        this.express.set('dirs', {
+            upload: path.join(__dirname, '../storage/upload'),
+        });
         this.express.set('port', config.get('server.port') || process.env.PORT);
         this.express.set('config', config);
         this.express.set('json spaces', 2);
