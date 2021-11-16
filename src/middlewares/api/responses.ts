@@ -13,3 +13,9 @@ function MakeResponse(res: Response, statusCode: StatusCodes): Response {
 export const NotFound: RequestHandler = (req, res, next) => {
     MakeResponse(res, StatusCodes.NOT_FOUND)
 }
+/**
+ * Returns a default response for HTTP code 405 (Method Not Allowed)
+ */
+export const MethodNotAllowed: RequestHandler = (req, res, next) => {
+    MakeResponse(res, StatusCodes.METHOD_NOT_ALLOWED)
+}
