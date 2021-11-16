@@ -20,3 +20,20 @@ services:
       ME_CONFIG_MONGODB_ADMINUSERNAME: root
       ME_CONFIG_MONGODB_ADMINPASSWORD: example
       ME_CONFIG_MONGODB_URL: mongodb://root:example@mongo:27017/
+  redis:
+    image: redis:latest
+    hostname: redis
+    environment:
+      - "ALLOW_EMPTY_PASSWORD=yes"
+      - "REDIS_DISABLE_COMMANDS=FLUSHDB,FLUSHALL"
+      - "REDIS_PASSWORD=redis"
+    ports:
+      - "6379:6379"
+  redis-commander:
+    image: rediscommander/redis-commander:latest
+    hostname: redis-commander
+    restart: always
+    environment:
+      - REDIS_HOSTS=local:redis:6379
+    ports:
+      - "8082:8081"
