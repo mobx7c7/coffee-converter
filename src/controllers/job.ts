@@ -17,7 +17,6 @@ class JobController {
      * @returns {Promise<void>}
      */
     async store(req: Request, res: Response): Promise<void> {
-        try {
             let form = await Form.receiveFiles(req);
             let batch = await JobService.createBatch({
                 files: Object.values(form.files).map(f => {
@@ -30,20 +29,6 @@ class JobController {
                 userId: '',
             });
             res.status(StatusCodes.CREATED).json(batch);
-        } catch (error) {
-            log.error('job', error.message);
-            let { FormidableError } = formidable.errors;
-            if (error instanceof FormidableError) {
-                res.status(error.httpCode).json({
-                    error: error.message,
-                    code: error.code
-                });
-            } else if (error instanceof mongoose.Error.ValidationError) {
-                res.status(422).json(error);
-            } else {
-                res.status(StatusCodes.INTERNAL_SERVER_ERROR).end();
-            }
-        }
     }
 }
 
