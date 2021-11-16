@@ -124,6 +124,35 @@ class JobService {
             ]
         });
     }
+    /**
+     * Updates a job
+     * 
+     * @param {string} id The resource id
+     * @param {any} input The data to be updated
+     * @returns {Promise<any>}
+     */
+    async updateOne({
+        id = '',
+        input = null,
+    }: {
+        id?: string,
+        input?: any
+    } = {}): Promise<any> {
+        return await Job.updateOne({ _id: id }, input);
+    }
+    /**
+     * Updates a job status
+     * 
+     * @param {string} id The resource id
+     * @param {string} status The job status
+     * @returns {Promise<any>}
+     */
+    async updateStatus(id: string, status: string): Promise<any> {
+        return await this.updateOne({
+            id: id,
+            input: { status: status }
+        })
+    }
 }
 
 export default new JobService()
