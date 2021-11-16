@@ -1,0 +1,13 @@
+{
+    "server": {
+        "port": 8000,
+        "secret": "changeme"
+    },
+    "database": {
+        "host": "changeme",
+        "port": 27017,
+        "name": "changeme",
+        "user": "changeme",
+        "pass": "changeme"
+    }
+}
