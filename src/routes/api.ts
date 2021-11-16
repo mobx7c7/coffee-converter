@@ -20,6 +20,9 @@ function createApis() {
                 router.route('/:id')
                     .get(JobController.show)
                     .all(ApiErrorResponse.MethodNotAllowed);
+                router.route('/:id/download')
+                    .get(JobController.download)
+                    .all(ApiErrorResponse.MethodNotAllowed);
                 return router;
             })())
             return router;
