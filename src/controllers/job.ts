@@ -26,6 +26,37 @@ class JobController {
         res.json(batches.map(BatchTransformer));
     }
     /**
+     * Retrieves a output file of the resource
+     * 
+     * @param {Request} req 
+     * @param {Response} res 
+     * @returns {Promise<void>}
+     */
+    async download(req: Request, res: Response): Promise<void> {
+        let {
+            id
+        }: {
+            id?: string
+        } = req.params
+
+        try {
+            let job = await JobService.select(id);
+
+            if (job && job.status == Status.SUCCEDED) {
+                let app = res.app;
+                let outputDir = app.get('dirs').output;
+                let outputFile = path.join(outputDir, job.iFile);
+                let fileNoExt = path.parse(job.title).name;
+                res.download(outputFile, fileNoExt);
+            } else {
+                res.sendStatus(StatusCodes.NOT_FOUND);
+            }
+        } catch (err) {
+            log.error('download', err.message);
+            res.sendStatus(StatusCodes.BAD_REQUEST);
+        }
+    }
+    /**
      * Retrieves a specified resource.
      * 
      * @param {Request} req 
