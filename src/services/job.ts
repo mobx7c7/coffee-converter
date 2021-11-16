@@ -5,8 +5,12 @@ import { Status } from '../common/consts';
 
 class JobService {
     /**
-    * Creates a job batch
+    /**
+     * Creates a batch
     * 
+     * @param {Object.<any>} files List of files received from user
+     * @param {Object.<number>} params Batch parameters for all jobs
+     * @param {Object.<number>} userId Owner id
     * @returns {Promise<any>}
     */
     async createBatch({
