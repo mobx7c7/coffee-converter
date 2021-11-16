@@ -6,6 +6,7 @@ interface IBatch extends Document {
     status?: string,
     params?: string,
     userId?: string,
+    jobs?: any,
     startedAt?: Date,
     finishedAt?: Date,
     createdAt?: Date,
