@@ -7,6 +7,7 @@ import * as Form from '../helpers/form';
 import path from 'path';
 import log from '../log';
 import fs from 'fs';
+import { Status } from '../common/consts';
 
 class JobController {
     /**
@@ -39,7 +40,12 @@ class JobController {
         } = req.params
 
         let job = await JobService.select(id);
-        res.send(JobTransformer(job))
+
+        if (job) {
+            res.send(JobTransformer(job))
+        } else {
+            res.sendStatus(StatusCodes.NOT_FOUND);
+        }
     }
     /**
      * Creates a new resource.
