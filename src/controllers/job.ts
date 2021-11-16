@@ -6,6 +6,7 @@ import BatchTransformer from '../transformers/batch';
 import * as Form from '../helpers/form';
 import path from 'path';
 import log from '../log';
+import fs from 'fs';
 
 class JobController {
     /**
@@ -67,6 +68,23 @@ class JobController {
             params: params,
             userId: userId,
         });
+
+        let app = req.app;
+        let uploadDir = app.get('dirs').upload;
+        let outputDir = app.get('dirs').output;
+        let transcoder = app.get('transcoder');
+
+        await fs.promises.mkdir(outputDir, { recursive: true });
+
+        batch.jobs.map(async (job) => {
+            await transcoder.add({
+                jobId: job._id,
+                iFile: path.join(uploadDir, job.iFile),
+                oFile: path.join(outputDir, job.iFile),
+                params: batch.params,
+            });
+        })
+
         res.status(StatusCodes.CREATED).json(BatchTransformer(batch));
     }
 }
