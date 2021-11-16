@@ -2,6 +2,7 @@ import { Application, Router } from 'express'
 import * as ApiModifiers from '../middlewares/api/modifiers'
 import * as ApiErrorHandlers from '../middlewares/api/error'
 import * as ApiErrorResponse from '../middlewares/api/responses'
+import * as Session from '../middlewares/session'
 import JobController from '../controllers/job'
 
 function createApis() {
@@ -25,6 +26,8 @@ function createApis() {
 export default function create(app: Application) {
     let apis = createApis()
     let api = Router()
+
+    api.use(Session.Verify);
 
     api.use(ApiModifiers.AddEndpointInfo);
     api.use(ApiModifiers.AddResponseHelpers);
