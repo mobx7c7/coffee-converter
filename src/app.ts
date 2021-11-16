@@ -1,12 +1,13 @@
-import cors from 'cors'
+import cors from 'cors';
 import cookieParser from 'cookie-parser';
-import express from 'express'
-import 'express-async-errors'
-import log from './log'
-import config from 'config'
-import path from 'path'
-import createApiRouter from './routes/api'
-import createWebRouter from './routes/web'
+import express from 'express';
+import 'express-async-errors';
+import path from 'path';
+import config from 'config';
+import mongoose from 'mongoose';
+import log from './log';
+import createApiRouter from './routes/api';
+import createWebRouter from './routes/web';
 
 class App {
     public express: express.Application
@@ -25,7 +26,9 @@ class App {
         this.database();
         this.routes();
         this.signalEvent('SIGINT', () => {
+            mongoose.connection.close(() => {
             process.exit(0)
+        });
         });
     }
 
@@ -42,7 +45,42 @@ class App {
         this.express.use(cors());
     }
 
-    private database(): void { }
+    private database(): void {
+        const DB_HOST = config.get('database.host');
+        const DB_PORT = config.get('database.port');
+        const DB_NAME = config.get('database.name');
+        const DB_USER = config.get('database.user');
+        const DB_PASS = config.get('database.pass');
+
+        const uri = `mongodb://${DB_HOST}:${DB_PORT}/${DB_NAME}`
+
+        mongoose.connect(uri, {
+            connectTimeoutMS: 5000,
+            authSource: 'admin', // <--- Fixes 'Authentication failed' 
+            user: DB_USER,
+            pass: DB_PASS,
+        })
+
+        mongoose.connection
+            .on('connecting', () => {
+                log.warn('database', 'Connecting')
+            })
+            .on('connected', () => {
+                log.info('database', 'Connected')
+            })
+            .on('disconnected', () => { // Event invokes together with 'close' event.
+                log.warn('database', 'Connection lost')
+            })
+            .on('reconnected', () => {
+                log.info('database', 'Connection restored')
+            })
+            .on('close', () => {
+                log.warn('database', 'Connection closed')
+            })
+            .on('error', (err) => {
+                log.error('database', `Error connecting to the database: ${err.message}`)
+            });
+    }
 
     private routes(): void {
         createApiRouter(this.express)
