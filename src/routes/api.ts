@@ -1,4 +1,6 @@
 import { Application, Router } from 'express'
+import * as ApiModifiers from '../middlewares/api/modifiers'
+import * as ApiErrorHandlers from '../middlewares/api/error'
 import * as ApiErrorResponse from '../middlewares/api/responses'
 import JobController from '../controllers/job'
 
@@ -24,8 +26,16 @@ export default function create(app: Application) {
     let apis = createApis()
     let api = Router()
 
+    api.use(ApiModifiers.AddEndpointInfo);
+    api.use(ApiModifiers.AddResponseHelpers);
+
     api.use('/', Object.entries(apis).reduce((r, a) => r.use(`/${a[0]}`, a[1]), Router()))
     api.use('*', ApiErrorResponse.NotFound)
+
+    api.use(ApiErrorHandlers.CatchDuplicateKey);
+    api.use(ApiErrorHandlers.CatchValidation);
+    api.use(ApiErrorHandlers.CatchForm);
+    api.use(ApiErrorHandlers.Default);
 
     app.set('apis', apis);
     app.use('/api', api);
