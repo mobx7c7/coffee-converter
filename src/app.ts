@@ -8,8 +8,10 @@ import mongoose from 'mongoose';
 import log from './log';
 import createApiRouter from './routes/api';
 import createWebRouter from './routes/web';
+import TranscoderService from './services/transcoder';
 
 class App {
+    private transcoder: TranscoderService;
     public express: express.Application
 
     private signalEvent(name, handler) {
@@ -27,8 +29,8 @@ class App {
         this.routes();
         this.signalEvent('SIGINT', () => {
             mongoose.connection.close(() => {
-            process.exit(0)
-        });
+                process.exit(0)
+            });
         });
     }
 
@@ -40,6 +42,9 @@ class App {
         this.express.set('secret', config.get('server.secret') || process.env.SECRET);
         this.express.set('config', config);
         this.express.set('json spaces', 2);
+
+        this.transcoder = new TranscoderService();
+        this.express.set('transcoder', this.transcoder);
     }
 
     private middlewares(): void {
@@ -70,6 +75,7 @@ class App {
                 log.warn('database', 'Connecting')
             })
             .on('connected', () => {
+                this.transcoder.process();
                 log.info('database', 'Connected')
             })
             .on('disconnected', () => { // Event invokes together with 'close' event.
