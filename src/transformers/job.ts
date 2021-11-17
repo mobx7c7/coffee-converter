@@ -6,6 +6,5 @@ export default function (input): any {
         createdAt: input.createdAt ?? null,
         startedAt: input.startedAt ?? null,
         finishedAt: input.finishedAt ?? null,
-        downloadUrl: input.oFile ?? null,
     }
 }
