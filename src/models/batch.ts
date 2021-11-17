@@ -7,8 +7,6 @@ interface IBatch extends Document {
     params?: string,
     userId?: string,
     jobs?: any,
-    startedAt?: Date,
-    finishedAt?: Date,
     createdAt?: Date,
     deletedAt?: Date,
 }
@@ -28,14 +26,6 @@ const BatchSchema = new Schema({
     userId: {
         type: String,
         required: true,
-    },
-    startedAt: {
-        type: Date,
-        default: ''
-    },
-    finishedAt: {
-        type: Date,
-        default: ''
     },
     jobs: [{ type: Schema.Types.ObjectId, ref: 'Job' }]
 

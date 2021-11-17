@@ -67,8 +67,6 @@ class JobService {
                 'status',
                 'params',
                 'createdAt',
-                'startedAt',
-                'finishedAt',
                 'jobs',
             ]);
     }
