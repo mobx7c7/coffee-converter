@@ -37,7 +37,7 @@ export const Verify: RequestHandler = async (req, res, next) => {
         sessionToken = await jwt.sign({ session: session }, secret, tokenOptions);
         req.session = session;
         res.cookie(FIELD_TOKEN, sessionToken);
-        log.verbose(LABEL, session);
+        log.verbose(LABEL, JSON.stringify(session));
         log.verbose(LABEL, sessionToken);
         next();
     } catch (error) {
