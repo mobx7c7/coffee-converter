@@ -96,9 +96,9 @@ export default class TranscoderService {
             })
             .on('cleaned', function (jobs, type) {
                 if (jobs.length === 0) {
-                    this.logWarn(`No ${type} jobs to remove`)
+                    logWarn(`No ${type} jobs to remove`)
                 } else {
-                    this.logWarn(`The following ${type} jobs were removed: ${JSON.stringify(jobs)}`)
+                    logWarn(`The following ${type} jobs were removed: ${JSON.stringify(jobs)}`)
                 }
             })
     }
