@@ -1,6 +1,6 @@
 import Bull, { Job, JobStatusClean, Queue } from 'bull';
 import fs from 'fs';
-import log from '../log';
+import { logFixedPrefix } from '../log';
 import {
     Transcoder,
     TranscoderEvents,
@@ -9,30 +9,7 @@ import {
 import JobService from './job';
 import { Status } from '../common/consts';
 
-function logEventBase(
-    logger: any,
-    message: any,
-): void {
-    logger('transcoder_service', message);
-}
-
-function logInfo(
-    message: string
-): void {
-    logEventBase(log.info, message);
-}
-
-function logWarn(
-    message: string
-): void {
-    logEventBase(log.warn, message);
-}
-
-function logFail(
-    message: string
-): void {
-    logEventBase(log.error, message);
-}
+const log = logFixedPrefix('trascoder_service');
 
 interface TranscoderData {
     transcoder?: Transcoder;
@@ -62,43 +39,43 @@ export default class TranscoderService {
     ): Promise<Queue<any>> {
         return queue
             .on('error', function (error) {
-                logFail(`An error ocurred: ${error}`);
+                log.error(`An error ocurred: ${error}`);
             })
             .on('waiting', function (jobId) {
-                logWarn(`Job ${jobId} is waiting to be processed`)
+                log.warn(`Job ${jobId} is waiting to be processed`)
             })
             .on('active', function (job, jobPromise) {
-                logWarn(`Job ${job.id} is active`)
+                log.warn(`Job ${job.id} is active`)
             })
             .on('stalled', function (job) {
-                logWarn(`Job ${job.id} is stalled`)
+                log.warn(`Job ${job.id} is stalled`)
             })
             .on('completed', function (job, result) {
-                logInfo(`Job ${job.id} is completed. Result: ${JSON.stringify(result)}`)
+                log.info(`Job ${job.id} is completed. Result: ${JSON.stringify(result)}`)
             })
             .on('progress', function (job, progress) {
-                logInfo(`Job ${job.id} is ${progress}% completed`)
+                log.info(`Job ${job.id} is ${progress}% completed`)
             })
             .on('failed', function (job, err) {
-                logFail(`Job ${job.id} failed: ${err.message}`)
+                log.error(`Job ${job.id} failed: ${err.message}`)
             })
             .on('removed', function (job) {
-                logWarn(`Job ${job.id} removed`)
+                log.warn(`Job ${job.id} removed`)
             })
             .on('resumed', function (job) {
-                logWarn(`Job ${job.id} resumed`)
+                log.warn(`Job ${job.id} resumed`)
             })
             .on('paused', function () {
-                logWarn(`Queue paused`)
+                log.warn(`Queue paused`)
             })
             .on('drained', function (queue) {
-                logWarn(`Queue drained`)
+                log.warn(`Queue drained`)
             })
             .on('cleaned', function (jobs, type) {
                 if (jobs.length === 0) {
-                    logWarn(`No ${type} jobs to remove`)
+                    log.warn(`No ${type} jobs to remove`)
                 } else {
-                    logWarn(`The following ${type} jobs were removed: ${JSON.stringify(jobs)}`)
+                    log.warn(`The following ${type} jobs were removed: ${JSON.stringify(jobs)}`)
                 }
             })
     }
@@ -178,16 +155,16 @@ export default class TranscoderService {
                     })
                     .on(TranscoderEvents.STARTED, () => {
                         this.notifyJobStart(jobId, Status.PROCESSING);
-                        logInfo(`Process started for job ${job.id}`);
+                        log.info(`Process started for job ${job.id}`);
                     })
                     .on(TranscoderEvents.FAILED, () => {
                         this.notifyJobFinish(jobId, Status.FAILED);
-                        logInfo(`Process failed for job ${job.id}`);
+                        log.info(`Process failed for job ${job.id}`);
                         done();
                     })
                     .on(TranscoderEvents.FINISHED, () => {
                         this.notifyJobFinish(jobId, Status.SUCCEDED);
-                        logInfo(`Process finished for job ${job.id}`);
+                        log.info(`Process finished for job ${job.id}`);
                         done();
                     })
                     .on(TranscoderEvents.DATA, (e) => {

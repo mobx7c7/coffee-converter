@@ -5,9 +5,11 @@ import JobTransformer from '../transformers/job';
 import BatchTransformer from '../transformers/batch';
 import * as Form from '../helpers/form';
 import path from 'path';
-import log from '../log';
+import { logFixedPrefix } from '../log';
 import fs from 'fs';
 import { Status } from '../common/consts';
+
+const log = logFixedPrefix('job_controller');
 
 class JobController {
     /**
