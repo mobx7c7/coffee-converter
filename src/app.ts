@@ -35,9 +35,25 @@ class App {
     }
 
     private configs(): void {
+        function getPersistentDataPath() {
+            switch (process.platform) {
+                case 'win32':
+                    return process.env.APPDATA
+                case 'darwin':
+                    return process.env.HOME + '/Library/Preferences'
+                case 'linux':
+                    return process.env.HOME + '/.local/share'
+                default:
+                    return ''
+            }
+        }
+
+        let storageDir = path.join(getPersistentDataPath(), 'coffee-converter');
+
         this.express.set('dirs', {
-            upload: path.join(__dirname, '../storage/upload'),
-            output: path.join(__dirname, '../storage/output'),
+            storage: storageDir,
+            upload: path.join(storageDir, 'upload'),
+            output: path.join(storageDir, 'output'),
         });
         this.express.set('port', config.get('server.port') || process.env.PORT);
         this.express.set('secret', config.get('server.secret') || process.env.SECRET);
