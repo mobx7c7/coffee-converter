@@ -85,7 +85,7 @@ class App {
             authSource: 'admin', // <--- Fixes 'Authentication failed' 
             user: DB_USER,
             pass: DB_PASS,
-        })
+        } as mongoose.ConnectOptions)
 
         mongoose.connection
             .on('connecting', () => {
