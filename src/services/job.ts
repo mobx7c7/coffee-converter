@@ -4,6 +4,21 @@ import Job from '../models/job';
 import { Status } from '../common/consts';
 
 class JobService {
+    private jobDefaultFieldsToSelect: string[];
+
+    constructor() {
+        this.jobDefaultFieldsToSelect = [
+            '_id',
+            'status',
+            'title',
+            'iFile',
+            'oFile',
+            'batch',
+            'createdAt',
+            'startedAt',
+            'finishedAt',
+        ]
+    }
     /**
      * Selects a job
      * 
@@ -46,16 +61,7 @@ class JobService {
             .find(query)
             .populate({
                 path: 'jobs',
-                select: [
-                    '_id',
-                    'status',
-                    'title',
-                    'iFile',
-                    'oFile',
-                    'createdAt',
-                    'startedAt',
-                    'finishedAt',
-                ]
+                select: this.jobDefaultFieldsToSelect
             })
             .select(['jobs'])
             .skip(offset)
@@ -110,16 +116,7 @@ class JobService {
 
         return await batch.populate({
             path: 'jobs',
-            select: [
-                '_id',
-                'status',
-                'title',
-                'iFile',
-                'oFile',
-                'createdAt',
-                'startedAt',
-                'finishedAt',
-            ]
+            select: this.jobDefaultFieldsToSelect
         });
     }
     /**
