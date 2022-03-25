@@ -18,7 +18,7 @@ export class FFmpegTranscoder extends Transcoder {
 
     private validateCommand() {
         if (!this.command)
-            throw Error('transcoder not initialized');
+            throw Error('command not initialized');
     }
 
     private startCommand(): void {
