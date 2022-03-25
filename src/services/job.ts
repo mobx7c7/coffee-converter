@@ -3,6 +3,18 @@ import Batch from '../models/batch';
 import Job from '../models/job';
 import { Status } from '../common/consts';
 
+interface CreateBatchFile {
+    title: string,
+    iFile: string,
+    oFile: string,
+}
+
+interface CreateBatchInput {
+    userId: string,
+    params: string,
+    files: CreateBatchFile[]
+}
+
 class JobService {
     private jobDefaultFieldsToSelect: string[];
 
@@ -90,20 +102,16 @@ class JobService {
     /**
      * Creates a batch
      * 
-     * @param {Object.<any>} files List of files received from user
-     * @param {Object.<number>} params Batch parameters for all jobs
-     * @param {Object.<number>} userId Owner id
+     * @param {Object.<string>} userId Owner id
+     * @param {Object.<string>} params Batch parameters for all linked jobs
+     * @param {Object.<CreateBatchFile>} files List of files received from user
      * @returns {Promise<any>}
      */
     async createBatch({
-        files = {},
-        params = '',
-        userId = ''
-    }: {
-        files?: any,
-        params?: string,
-        userId?: string
-    } = {}): Promise<any> {
+        userId,
+        params,
+        files,
+    }: CreateBatchInput): Promise<any> {
         let newBatchId = new mongoose.Types.ObjectId();
 
         let jobs = await Job.insertMany(
