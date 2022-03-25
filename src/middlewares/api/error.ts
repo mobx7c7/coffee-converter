@@ -1,9 +1,15 @@
-import { ErrorRequestHandler } from 'express'
-import { StatusCodes } from 'http-status-codes'
-import { MongoServerError } from 'mongodb'
-import { formidable } from 'formidable'
+import { ErrorRequestHandler } from 'express';
+import { StatusCodes } from 'http-status-codes';
+import { MongoServerError } from 'mongodb';
 import { HTTPError } from '../../common/exceptions';
-import mongoose from 'mongoose'
+import formidable from 'formidable';
+import mongoose from 'mongoose';
+
+const { FormidableError } = formidable.errors
+
+declare class FormidableErrorWithCode extends FormidableError {
+    code?: number
+}
 
 export const CatchDuplicateKey: ErrorRequestHandler = (err, req, res, next) => {
     if (err instanceof MongoServerError && err.code === 11000) { // DuplicateKey
@@ -39,12 +45,11 @@ export const CatchValidation: ErrorRequestHandler = (err, req, res, next) => {
 }
 
 export const CatchForm: ErrorRequestHandler = (err, req, res, next) => {
-    let { FormidableError } = formidable.errors;
     if (err instanceof FormidableError) {
         //res.status(err.statusCode).json({ text: err.message })
         res.status(err.httpCode).error({
             message: err.message,
-            code: err.code
+            code: (err as FormidableErrorWithCode).code
         });
     } else {
         next(err)
