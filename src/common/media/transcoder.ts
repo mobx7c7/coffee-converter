@@ -67,14 +67,14 @@ export class Transcoder {
         this.notityEventBase(TranscoderEvents.STARTED);
     }
 
-    protected notifyFinished(status = Status.SUCCEDED): void {
-        this.status = status;
+    protected notifyFinished(): void {
+        this.status = Status.SUCCEDED;
         this.notityEventBase(TranscoderEvents.FINISHED);
     }
 
-    protected notifyError(status = Status.FAILED): void {
-        this.status = status;
-        this.notityEventBase(TranscoderEvents.FAILED);
+    protected notifyError(status?: Status, message?: string): void {
+        this.status = status ?? Status.FAILED;
+        this.notityEventBase(TranscoderEvents.FAILED, { message: message });
     }
 
     protected notifyData(chunk: any): void {

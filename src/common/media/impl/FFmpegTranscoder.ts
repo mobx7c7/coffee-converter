@@ -1,15 +1,14 @@
-import { spawnSync } from 'child_process';
 import { logFixedPrefix } from '../../../log';
 import { Transcoder, TranscoderOpts } from '../transcoder'
 import { Status } from '../../consts';
 import FFmpegSyntax from './FFmpegSyntax'
 import ffmpeg from 'fluent-ffmpeg';
-import os from 'os';
 
 const log = logFixedPrefix('transcoder');
 
 export class FFmpegTranscoder extends Transcoder {
     private command: ffmpeg.FfmpegCommand;
+    private aborted: boolean
 
     constructor(iFile: string, oFile: string, oOpts: TranscoderOpts) {
         super(iFile, oFile);
@@ -28,22 +27,21 @@ export class FFmpegTranscoder extends Transcoder {
                     this.notifyProgress(data)
                 })
                 .on('start', (cmd) => {
-                    log.info(cmd);
                     this.notifyStarted();
                 })
                 .on('end', (stdout, stderr) => {
                     if (this.getStatus() == Status.PROCESSING) {
                         this.notifyFinished();
-                    } else {
-                        this.notifyError();
                     }
                 })
-                .on('error', (err) => {
-                    log.error(err);
-                    this.notifyError();
+                .on('error', (message) => {
+                    if (this.getStatus() == Status.PROCESSING) {
+                        let status = this.aborted ? Status.ABORTED : Status.FAILED;
+                        this.notifyError(status, message);
+                    }
                 })
-                .on('stderr', function (strerr) {
-                    log.verbose(strerr)
+                .on('stderr', (message) => {
+                    log.verbose(message)
                 })
             if (typeof this.getOutputFile() == 'string') {
                 this.command.run()
@@ -51,37 +49,29 @@ export class FFmpegTranscoder extends Transcoder {
                 this.command.pipe().on('data', this.notifyData)
             }
         } catch (error) {
-            log.error(error);
+            log.error('startCommand', error);
         }
     }
 
     suspend(): void {
         this.validateCommand();
-        // Send SIGSTOP to suspend ffmpeg
-        this.command.kill('SIGSTOP');
+        if (this.getStatus() == Status.PROCESSING) {
+            this.command.kill('SIGSTOP');
+        }
     }
 
     resume(): void {
         this.validateCommand();
-        // Send SIGCONT to resume ffmpeg
-        this.command.kill('SIGCONT');
+        if (this.getStatus() == Status.PROCESSING) {
+            this.command.kill('SIGCONT');
+        }
     }
 
     abort(): void {
         this.validateCommand();
-        if (this.getStatus() == Status.PROCESSING) {
-            this.notifyError(Status.ABORTED);
-            // Workaround for non-working kill function.
-            // Only for windows platform.
-            if (os.platform() === 'win32') {
-                try {
-                    spawnSync('taskkill', ['/pid', this.command.ffmpegProc.pid, '/f', '/t']);
-                } catch (e) {
-                    console.error(e);
-                }
-            } else {
-                this.command.kill('SIGKILL');
-            }
+        if (this.getStatus() == Status.PROCESSING && !this.aborted) {
+            this.command.kill('SIGKILL');
+            this.aborted = true;
         }
     }
 
@@ -91,8 +81,7 @@ export class FFmpegTranscoder extends Transcoder {
             this.notifyStarted();
             ffmpeg.ffprobe(this.getInputFile(), (err, meta) => {
                 if (err) {
-                    log.error(err.message);
-                    this.notifyError();
+                    this.notifyError(Status.FAILED, err.message);
                 } else {
                     this.startCommand();
                 }
