@@ -1,23 +1,19 @@
 import Bull, { Job, JobStatusClean, Queue } from 'bull';
 import fs from 'fs';
 import { logFixedPrefix } from '../log';
-import {
-    Transcoder,
-    TranscoderEvents,
-    TranscoderFactory
-} from '../common/media/transcoder';
-import JobService from './job';
 import { Status } from '../common/consts';
+import JobService from './job';
+import Media, { Transcoder, TranscoderOpts, TranscoderEvents } from '../common/media';
 
 const log = logFixedPrefix('trascoder_service');
 
-interface TranscoderData {
-    transcoder?: Transcoder;
+interface TranscoderProcess {
+    instance?: Transcoder;
     oStream?: fs.WriteStream;
 }
 
 export default class TranscoderService {
-    private processes: TranscoderData[];
+    private processes: TranscoderProcess[];
     private mainQueue: Queue<any>;
 
     constructor() {
@@ -112,9 +108,8 @@ export default class TranscoderService {
         errored = false
     ): Promise<void> {
         let process = this.processes[jobId];
-        process.oStream.close();
         if (errored) {
-            await fs.promises.unlink(process.oStream.path);
+            await fs.promises.unlink(process.instance.getOutputFile());
         }
         delete this.processes[jobId];
     }
@@ -122,14 +117,24 @@ export default class TranscoderService {
     protected createProcess(
         jobId: string,
         iFile: string,
-        oFile: string
-    ): TranscoderData {
-        let process = {
-            oStream: fs.createWriteStream(oFile),
-            transcoder: TranscoderFactory.audioFormat(iFile),
+        oFile: string,
+        oOpts: TranscoderOpts,
+    ): TranscoderProcess {
+        let { format }: { format?: string } = oOpts;
+
+        let mfi = Media.Capability.Format(format);
+
+        if (!mfi) {
+            throw Error(`Format \'${format}\' not supported`)
         }
-        this.processes[jobId] = process;
-        return process;
+
+        let transcoder = Media.Factory.CreateTranscoder(iFile, oFile, oOpts);
+
+        if (!transcoder) {
+            throw Error(`Can\'t create transcoder instance for \'${format}\' format`);
+        }
+
+        return this.processes[jobId] = { instance: transcoder }
     }
 
     async getJobs(): Promise<Job<any>[]> {
@@ -147,9 +152,9 @@ export default class TranscoderService {
     async process(): Promise<void> {
         this.mainQueue.process((job, done) => {
             try {
-                let { jobId, iFile, oFile } = job.data;
-                let process = this.createProcess(jobId, iFile, oFile);
-                process.transcoder
+                let { jobId, iFile, oFile, outputOpts: oOpts } = job.data;
+                let process = this.createProcess(jobId, iFile, oFile, oOpts);
+                process.instance
                     .on(TranscoderEvents.PROGRESS, (e) => {
                         job.progress(e.progress.percent.toFixed());
                     })
@@ -166,9 +171,6 @@ export default class TranscoderService {
                         this.notifyJobFinish(jobId, Status.SUCCEDED);
                         log.info(`Process finished for job ${job.id}`);
                         done();
-                    })
-                    .on(TranscoderEvents.DATA, (e) => {
-                        process.oStream.write(e.chunk);
                     })
                     .start();
             } catch (error) {
