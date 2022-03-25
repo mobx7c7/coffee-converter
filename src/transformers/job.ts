@@ -3,8 +3,10 @@ export default function (input): any {
         id: input._id,
         status: input.status,
         title: input.title,
+        //oFile: input.oFile,
+        //batch: input.batch,
         createdAt: input.createdAt ?? null,
-        startedAt: input.startedAt ?? null,
-        finishedAt: input.finishedAt ?? null,
+        startedAt: input.startedAt ?? undefined,
+        finishedAt: input.finishedAt ?? undefined,
     }
 }
