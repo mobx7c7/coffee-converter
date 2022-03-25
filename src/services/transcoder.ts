@@ -76,42 +76,53 @@ export default class TranscoderService {
             })
     }
 
-    protected async notifyJobStart(
-        id: string,
-        status: string
+    protected async notifyStart(
+        jobId: string
     ): Promise<any> {
         return await JobService.updateOne({
-            id: id,
+            id: jobId,
             input: {
-                status: status,
+                status: Status.PROCESSING,
                 startedAt: new Date().toISOString()
             }
         });
     }
 
-    protected async notifyJobFinish(
-        id: string,
-        status: string
+    protected async notifyPostProcess(
+        jobId: string
     ): Promise<any> {
-        await this.destroyProcess(id, status == Status.FAILED);
+        let process = this.processes[jobId];
+        let status = process.instance.getStatus();
+        await this.destroyProcess(jobId);
         return await JobService.updateOne({
-            id: id,
+            id: jobId,
             input: {
-                status: status,
-                finishedAt: new Date().toISOString()
+                status: process.instance.getStatus(),
+                finishedAt: status == Status.SUCCEDED ? new Date().toISOString() : undefined
             }
         });
     }
 
     protected async destroyProcess(
-        jobId: string,
-        errored = false
+        jobId: string
     ): Promise<void> {
         let process = this.processes[jobId];
-        if (errored) {
-            await fs.promises.unlink(process.instance.getOutputFile());
+        if (process) {
+            let instance = process.instance;
+            let status = instance.getStatus();
+            if (status != Status.SUCCEDED) {
+                let outFile = instance.getOutputFile();
+                //log.info(`Removing file ${outFile}' from job ${jobId}`)
+                await fs.promises.unlink(outFile);
+            }
+            delete this.processes[jobId];
         }
-        delete this.processes[jobId];
+    }
+
+    protected abortProcess(
+        jobId: string
+    ): void {
+        this.processes[jobId]?.instance?.abort();
     }
 
     protected createProcess(
@@ -149,6 +160,10 @@ export default class TranscoderService {
         await this.mainQueue.add(input);
     }
 
+    async abortJob(id: string) {
+        this.abortProcess(id);
+    }
+
     async process(): Promise<void> {
         this.mainQueue.process((job, done) => {
             try {
@@ -158,19 +173,19 @@ export default class TranscoderService {
                     .on(TranscoderEvents.PROGRESS, (e) => {
                         job.progress(e.progress.percent.toFixed());
                     })
-                    .on(TranscoderEvents.STARTED, () => {
-                        this.notifyJobStart(jobId, Status.PROCESSING);
+                    .on(TranscoderEvents.STARTED, async () => {
+                        await this.notifyStart(jobId);
                         log.info(`Process started for job ${job.id}`);
                     })
-                    .on(TranscoderEvents.FAILED, () => {
-                        this.notifyJobFinish(jobId, Status.FAILED);
-                        log.info(`Process failed for job ${job.id}`);
-                        done();
+                    .on(TranscoderEvents.FAILED, async (e: any) => {
+                        await this.notifyPostProcess(jobId);
+                        log.error(`Process failed for job ${job.id}. Message: ${e.message}`);
+                        done(); // completes the job
                     })
-                    .on(TranscoderEvents.FINISHED, () => {
-                        this.notifyJobFinish(jobId, Status.SUCCEDED);
+                    .on(TranscoderEvents.FINISHED, async () => {
+                        await this.notifyPostProcess(jobId);
                         log.info(`Process finished for job ${job.id}`);
-                        done();
+                        done(); // completes the job
                     })
                     .start();
             } catch (error) {
