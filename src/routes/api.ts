@@ -5,6 +5,9 @@ import * as ApiErrorResponse from '../middlewares/api/responses'
 import * as Session from '../middlewares/session'
 import JobController from '../controllers/job'
 import { StatusCodes } from 'http-status-codes';
+import mongoose from 'mongoose';
+import log from '../log';
+import fs from 'fs';
 
 function createApis() {
     return {
@@ -29,6 +32,27 @@ function createApis() {
                     .put(async (req, res) => {
                         let transcoder = req.app.get('transcoder');
                         await transcoder.add({ video: 'http://example.com/video1.mov' });
+                        res.sendStatus(StatusCodes.OK);
+                    })
+                    .all(ApiErrorResponse.MethodNotAllowed);
+                return router;
+            })())
+            router.use('/app', (() => {
+                router.route('/data')
+                    .delete(async (req, res) => {
+                        let app = req.app;
+                        let transcoder = app.get('transcoder');
+                        let storageDir = app.get('dirs').storage;
+
+                        log.info('app', 'Clear transcoder queue');
+                        await transcoder.clear();
+
+                        log.info('app', 'Clear database');
+                        await mongoose.connection.db.dropDatabase();
+
+                        log.info('app', 'Clear work folder');
+                        await fs.promises.rmdir(storageDir, { recursive: true });
+
                         res.sendStatus(StatusCodes.OK);
                     })
                     .all(ApiErrorResponse.MethodNotAllowed);
