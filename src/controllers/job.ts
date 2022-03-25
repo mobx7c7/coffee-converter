@@ -195,6 +195,30 @@ class JobController {
             //TODO: fallback operation
             log.error(error.message)
             res.status(StatusCodes.BAD_REQUEST).json({ error: error.message });
+
+    /**
+     * Aborts a specified resource.
+     * 
+     * @param {Request} req 
+     * @param {Response} res 
+     * @returns {Promise<void>}
+     */
+    async abort(req: Request, res: Response): Promise<void> {
+        let {
+            id
+        }: {
+            id?: string
+        } = req.params
+        let app = req.app;
+        let transcoder = app.get('transcoder');
+
+        let job = await JobService.select(id);
+
+        if (job) {
+            await transcoder.abortJob(id);
+            res.sendStatus(StatusCodes.OK);
+        } else {
+            res.sendStatus(StatusCodes.NOT_FOUND);
         }
     }
 }
