@@ -87,11 +87,13 @@ class JobController {
             let job = await JobService.select(id);
 
             if (job && job.status == Status.SUCCEDED) {
+                let params = JSON.parse(job.batch.params);
+                let mfi = Media.Capability.Format(params.format)
                 let app = res.app;
                 let outputDir = app.get('dirs').output;
-                let outputFile = path.join(outputDir, job.iFile);
-                let fileNoExt = path.parse(job.title).name;
-                res.download(outputFile, fileNoExt);
+                let outputFile = path.join(outputDir, job.oFile);
+                let filename = `${path.parse(job.title).name}.${mfi.extension ?? params.format}`;
+                res.download(outputFile, filename);
             } else {
                 res.sendStatus(StatusCodes.NOT_FOUND);
             }
