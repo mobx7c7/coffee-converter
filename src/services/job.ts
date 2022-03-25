@@ -121,6 +121,7 @@ class JobService {
                     status: Status.WAITING,
                     title: i.title,
                     iFile: i.iFile,
+                    oFile: i.oFile,
                 }
             })
         );

@@ -8,8 +8,50 @@ import path from 'path';
 import { logFixedPrefix } from '../log';
 import fs from 'fs';
 import { Status } from '../common/consts';
+import Media, { CategoryType, TranscoderOpts } from '../common/media'
 
 const log = logFixedPrefix('job_controller');
+
+function validateReceivedForm(form: Form.ReceivedForm) {
+    let { files, fields } = form;
+
+    if (Object.keys(files).length == 0) {
+        throw Error('No file was received');
+    }
+
+    if (!fields.json) {
+        throw Error('No json was received');
+    }
+
+    // TODO: Validate files by probing/decoding them
+}
+
+function validateOutputOpts(outputOpts: TranscoderOpts) {
+    let { format, stream } = outputOpts;
+
+    let mfi = Media.Capability.Format(format);
+
+    if (!mfi) {
+        throw Error(`Invalid format: ${format}`);
+    }
+
+    let vcodec = stream.video?.codec;
+    let acodec = stream.audio?.codec;
+
+    if (vcodec && (format === CategoryType.VIDEO)) {
+        let found = mfi.codecs.video.find(e => e === vcodec);
+        if (!found) {
+            throw Error(`Invalid video codec: ${vcodec}`);
+        }
+    }
+
+    if (acodec && (format === CategoryType.VIDEO || format === CategoryType.AUDIO)) {
+        let found = mfi.codecs.audio.find(e => e === acodec);
+        if (!found) {
+            throw Error(`Invalid audio codec: ${acodec}`);
+        }
+    }
+}
 
 class JobController {
     /**
@@ -89,42 +131,69 @@ class JobController {
      * @returns {Promise<void>}
      */
     async store(req: Request, res: Response): Promise<void> {
-        let {
-            params
-        }: {
-            params?: string
-        } = req.query
-
         let userId = req.session.id;
-        let form = await Form.receiveFiles(req);
-        let batch = await JobService.createBatch({
-            files: Object.values(form.files).map(f => {
-                return {
-                    title: f.originalFilename,
-                    iFile: path.basename(f.filepath),
-                }
-            }),
-            params: params,
-            userId: userId,
-        });
-
         let app = req.app;
         let uploadDir = app.get('dirs').upload;
         let outputDir = app.get('dirs').output;
         let transcoder = app.get('transcoder');
+        let form: Form.ReceivedForm;
+        let outputOpts = {};
 
-        await fs.promises.mkdir(outputDir, { recursive: true });
+        try {
+            try {
+                form = await Form.receiveFiles(req);
+            } catch (error) {
+                log.error(error);
+                throw Error("An error occured while parsing form data");
+            }
 
-        batch.jobs.map(async (job) => {
-            await transcoder.add({
-                jobId: job._id,
-                iFile: path.join(uploadDir, job.iFile),
-                oFile: path.join(outputDir, job.iFile),
-                params: batch.params,
+            validateReceivedForm(form);
+
+            let { files, fields } = form;
+            let outputOptsJson = fields['json'] as string;
+
+            try {
+                outputOpts = JSON.parse(outputOptsJson) as TranscoderOpts;
+            } catch (error) {
+                log.error(error);
+                throw Error('Invalid json data');
+            }
+
+            validateOutputOpts(outputOpts);
+
+            // Create batch and jobs for each file
+            let batch = await JobService.createBatch({
+                userId: userId,
+                params: outputOptsJson,
+                files: Object.values(files).map(file => {
+                    return {
+                        title: file['originalFilename'],
+                        iFile: file['newFilename'],
+                        oFile: file['newFilename'],
+                        //mimeType: file['mimetype'],
+                    }
+                }),
             });
-        })
 
-        res.status(StatusCodes.CREATED).json(BatchTransformer(batch));
+            // Try making a output folder if not exist
+            await fs.promises.mkdir(outputDir, { recursive: true });
+
+            // Create transcode tasks to each job
+            batch.jobs.map(async (job) => {
+                await transcoder.add({
+                    jobId: job._id,
+                    iFile: path.join(uploadDir, job.iFile),
+                    oFile: path.join(outputDir, job.oFile),
+                    outputOpts: outputOpts
+                });
+            })
+
+            res.status(StatusCodes.CREATED).json(BatchTransformer(batch));
+        } catch (error) {
+            //TODO: fallback operation
+            log.error(error.message)
+            res.status(StatusCodes.BAD_REQUEST).json({ error: error.message });
+        }
     }
 }
 
