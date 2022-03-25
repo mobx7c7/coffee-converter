@@ -4,13 +4,36 @@ import * as ApiErrorHandlers from '../middlewares/api/error'
 import * as ApiErrorResponse from '../middlewares/api/responses'
 import * as Session from '../middlewares/session'
 import JobController from '../controllers/job'
+import { StatusCodes } from 'http-status-codes';
 
 function createApis() {
     return {
         v1: (() => {
-            let router = Router()
-            router.route('/test')
-                .get((_, res) => res.send({ response: 'This is an api endpoint test' }))
+            let router = Router();
+            router.use('/test', (() => {
+                let router = Router();
+                router.route('/')
+                    .get((_, res) => res.send({ response: 'This is an api endpoint test' }))
+                    .all(ApiErrorResponse.MethodNotAllowed);
+                router.route('/transcode')
+                    .get(async (req, res) => {
+                        let transcoder = req.app.get('transcoder');
+                        let jobs = await transcoder.getJobs();
+                        res.status(StatusCodes.OK).json(jobs);
+                    })
+                    .post(async (req, res) => {
+                        let transcoder = req.app.get('transcoder');
+                        await transcoder.process();
+                        res.sendStatus(StatusCodes.OK);
+                    })
+                    .put(async (req, res) => {
+                        let transcoder = req.app.get('transcoder');
+                        await transcoder.add({ video: 'http://example.com/video1.mov' });
+                        res.sendStatus(StatusCodes.OK);
+                    })
+                    .all(ApiErrorResponse.MethodNotAllowed);
+                return router;
+            })())
             router.use('/jobs', (() => {
                 let router = Router()
                 router.route('/')
