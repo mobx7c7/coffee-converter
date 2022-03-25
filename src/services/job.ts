@@ -26,7 +26,18 @@ class JobService {
      * @returns {Promise<any>}
      */
     async select(id: string): Promise<any> {
-        return await Job.findById(id);
+        return await Job
+            .findById(id)
+            .populate({
+                path: 'batch',
+                select: [
+                    '_id',
+                    'status',
+                    'params',
+                    'createdAt',
+                    'updatedAt',
+                ]
+            })
     }
     /**
      * Selects all jobs
