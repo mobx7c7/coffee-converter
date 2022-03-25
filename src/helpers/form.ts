@@ -1,7 +1,15 @@
-import formidable from 'formidable';
+import { Request } from 'express';
+import formidable, { Fields, File, Files } from 'formidable';
+import IncomingForm from 'formidable/Formidable';
 import fs from 'fs';
 
-export async function receiveFiles(req): Promise<any> {
+export interface ReceivedForm {
+    form: IncomingForm,
+    files: Files,
+    fields: Fields,
+}
+
+export async function receiveFiles(req: Request): Promise<ReceivedForm> {
     let uploadDir = req.app.get('dirs').upload;
 
     const form = formidable({
@@ -22,8 +30,8 @@ export async function receiveFiles(req): Promise<any> {
             } else {
                 resolve({
                     form: form,
+                    files: files,
                     fields: fields,
-                    files: files
                 });
             }
         });
